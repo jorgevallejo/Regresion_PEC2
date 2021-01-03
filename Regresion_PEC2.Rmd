@@ -77,6 +77,7 @@ library(faraway)
 # library(car)
 # library(MASS)
 # library(dae)
+library(corrplot)
 ```
 
 # Ejercicio 1. Base de datos `diabetes.csv`
@@ -103,7 +104,7 @@ str(diabetes)
 
 Vemos que se compone de de 377 observaciones y 11 variables. Todas las variables han sido correctamente identificadas como numéricas.
 
-Finalmente, una forma rápida de buscar anómalos y valores ausentes es mediante el resumen numérico:
+Finalmente, una forma rápida de buscar valores anómalos y valores ausentes es mediante el resumen numérico:
 ```{r}
 summary(diabetes)
 ```
@@ -142,10 +143,24 @@ Si seguimos examinando el sumario de los tests estadísticos a partir del modelo
 
 Una forma rápida de comprobar qué variables se correlacionan entre ellas es representarlas por pares en gráficas de nubes de puntos:
 ```{r hemo_pairs}
-pairs(diabetes)
+pairs(diabetes[, -1])
 ```
 
-A primera vista, las correlaciones más obvias son _cintura-cadera_, _cintura-peso_ y _cadera-peso_. Nada sorprendente. Otra correlación que parece clara es _bp.1s-bp.1d_. Correlaciones más difusas podrían ser _altura-peso_, _glyhb-stab.glu_, _chol-stab.glu_ y _chol-hdl_.
+A primera vista, las correlaciones más obvias son _cintura-cadera_, _cintura-peso_ y _cadera-peso_. Nada sorprendente si tenemos en cuenta dónde se acumula la mayor proporción de grasa corporal. Otra correlación que parece clara es _bp.1s-bp.1d_. Correlaciones más difusas podrían ser _altura-peso_, _chol-stab.glu_ y _chol-hdl_.
+
+También podemos usar algo más preciso, como una **matriz de correlaciones**. Debido a la cantidad de variables, nos resultará más sencillo si la representamos en un gráfico de tipo mapa de calor:
+```{r hemo_corr, fig.cap='Matriz de correlaciones. El color azul indica correlación positiva, el color rojo correlación negativa. El tamaño de los círculos y la saturación del color son proporcionales al grado de correlación.'}
+corrplot(
+round(cor(diabetes[, -1]),2),
+type = 'upper',
+diag = FALSE,
+addCoef.col = "white",
+tl.srt = 45
+)
+```
+
+En este gráfico vemos fácilmente que casi todos los pares de variables muestran algún tipo de correlación. Destacan, como veíamos antes, los pares de medidas físicas directamente relacionados con la acumulación de grasa ( _cintura-peso_, _cintura-cadera_ y _cadera-peso_), y en menor medida los pares _bp.1d-bp.1s_ y _age-bp.1s_.
+
 
 
 # Apéndice A: Código
