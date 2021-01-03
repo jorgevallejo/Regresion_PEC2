@@ -73,16 +73,93 @@ file.remove(
 # Load packages
 library(knitr)
 # library(tseries)
-# library(faraway)
+library(faraway)
 # library(car)
 # library(MASS)
 # library(dae)
+library(corrplot)
 ```
 
-# Ejercicio 1. Estimación del peso del hígado
+# Ejercicio 1. Base de datos `diabetes.csv`
+
+Como preparación al ejercicio, cargaremos los datos a memoria y examinaremos las características y estructura de los mismos.
+
+```{r read data}
+# Reading and loading data from file diabetes.txt
+diabetes <- read.table("./data/diabetes.txt",
+           header = TRUE
+           )
+
+kable(
+  head(diabetes),
+  caption = "Ejemplo de las primeras seis observaciones en la base de datos `diabetes`.",
+  align = 'c'
+)
+```
+
+Si examinamos la estructura de la base de datos:
+```{r}
+str(diabetes)
+```
+
+Vemos que se compone de de 377 observaciones y 11 variables. Todas las variables han sido correctamente identificadas como numéricas.
+
+Finalmente, una forma rápida de buscar valores anómalos y valores ausentes es mediante el resumen numérico:
+```{r}
+summary(diabetes)
+```
+
+No parece haber valores anómalos (entendidos como exageradamente elevados o exageradamente pequeños) en ninguna de las variables. Por lo menos, en las variables _age_, _cintura_, _cadera_, _altura_ y _peso_; que tienen máximos y mínimos claramente dentro del rango esperable. En el resto de variables es más difícil de asegurar, ya que no estoy familiarizado con ellas e incluso algunas desconozco a qué se refieren. En cualquier caso, no parece haber ningún valor que destaque. Tampoco se ha detectado que falte ningún valor.
+
+Finalmente, podríamos incluir un resumen gráfico de las variables para hacernos una idea de la distribución de valores en cada una:
+```{r resumen_grafico, fig.cap="Gráficos de densidad mostrando la distribución de valores para cada una de las variables. Algunas de las variables, como _glyhb_, _stab.glu_ y _bp.1s_ parecen estar fuertemente sesgadas hacia valores bajos."}
+par(mfrow=c(3,4))
+for (i in 1:ncol(diabetes)){
+plot(density(diabetes[,i]),
+     main = colnames(diabetes[i]),
+     xlab = "", ylab = "", yaxt = 'n')
+}
+```
 
 
+## Ejercicio 1a. Ajustar un modelo lineal para explicar la variable hemoglobina glicosilada en función del resto de variables de la base de datos. Como el número de variables predictoras es elevado, investigar la posible multicolinealidad de este modelo de regresión.
 
+Como primer paso, vamos a ajustar un modelo lineal con todas las variables predictoras
+
+```{r hemo_mod1}
+hemo_mod <- lm(glyhb ~ ., data = diabetes)
+summary(hemo_mod)
+```
+
+Llama la atención lo pequeños que son los valores de los coeficientes de los predictores. Esto puede deberse a que los valores que adoptan las variables predictoras son uno o dos órdenes de magnitud superiores a los valores que adopta la variable respuesta. Para trabajar con unos coeficientes que sean menos confusos a la vista, cambiaremos la escala de la respuesta multiplicándola por 10 y ajustando los datos a un nuevo modelo:
+```{r hemo_mod2}
+hemo_mod <- lm(I(glyhb*10) ~ ., data = diabetes)
+summary(hemo_mod)
+```
+
+Comprobamos que, efectivamente, los coeficientes (y los errores estándar) de los predictores son diez veces mayores que en el modelo anterior, lo que los hace más cómodos a ojos humanos. Sin embargo el resto de valores (estadísticos, p-valores, R^2) permanecen inalterados.
+
+Si seguimos examinando el sumario de los tests estadísticos a partir del modelo, vemos que el valor de R^2 ajustado no es pequeño, lo que apunta a que el modelo recoge gran parte de la variación en los datos. Sin embargo, tan sólo dos de las variables predictoras es significativa. Eso podría significar que no afectan a la variable respuesta o podría ser un síntoma de **colinealidad**. La colinealidad (o multicolinealidad) es la situación en la que una variable predictora es una combinación lineal de otras. Dicho de otra forma, tenemos varios predictores que están midiendo lo mismo y, por tanto, no son ortogonales entre ellos.
+
+Una forma rápida de comprobar qué variables se correlacionan entre ellas es representarlas por pares en gráficas de nubes de puntos:
+```{r hemo_pairs}
+pairs(diabetes[, -1])
+```
+
+A primera vista, las correlaciones más obvias son _cintura-cadera_, _cintura-peso_ y _cadera-peso_. Nada sorprendente si tenemos en cuenta dónde se acumula la mayor proporción de grasa corporal. Otra correlación que parece clara es _bp.1s-bp.1d_. Correlaciones más difusas podrían ser _altura-peso_, _chol-stab.glu_ y _chol-hdl_.
+
+También podemos usar algo más preciso, como una **matriz de correlaciones**. Debido a la cantidad de variables, nos resultará más sencillo si la representamos en un gráfico de tipo mapa de calor:
+```{r hemo_corr, fig.cap='Matriz de correlaciones. El color azul indica correlación positiva, el color rojo correlación negativa. El tamaño de los círculos y la saturación del color son proporcionales al grado de correlación.'}
+corrplot(
+round(cor(diabetes[, -1]),2),
+type = 'upper',
+diag = FALSE,
+addCoef.col = "white",
+tl.srt = 45
+)
+```
+
+En este gráfico vemos fácilmente que casi todos los pares de variables muestran algún tipo de correlación. Destacan, como veíamos antes, los pares de medidas físicas directamente relacionados con la acumulación de grasa ( _cintura-peso_, _cintura-cadera_ y _cadera-peso_), y en menor medida los pares _bp.1d-bp.1s_ y _age-bp.1s_.
 
 
 
