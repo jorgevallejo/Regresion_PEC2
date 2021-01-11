@@ -159,7 +159,55 @@ tl.srt = 45
 )
 ```
 
-En este gráfico vemos fácilmente que casi todos los pares de variables muestran algún tipo de correlación. Destacan, como veíamos antes, los pares de medidas físicas directamente relacionados con la acumulación de grasa ( _cintura-peso_, _cintura-cadera_ y _cadera-peso_), y en menor medida los pares _bp.1d-bp.1s_ y _age-bp.1s_.
+En este gráfico vemos fácilmente que casi todos los pares de variables muestran algún tipo de correlación. Destacan, como veíamos antes, los pares de medidas físicas directamente relacionados con la acumulación de grasa ( _cintura-peso_, _cintura-cadera_ y _cadera-peso_), y en menor medida los pares _bp.1d-bp.1s_ y _age-bp.1s_. Si pensamos que variables muy correlacionadas están básicamente midiendo lo mismo, podemos simplificar el modelo eligiendo una única variable de cada grupo de variables relacionadas. Por ejemplo, para el grupo _cintura_ - _peso_ - _cadera_ podemos elegir peso (la más fácil de medir); y del par _bp.1d-bp.1s_ quedarnos sólo con _bp.1d_.
+
+Si ajustamos los datos al nuevo modelo:
+```{r}
+# Modelo sin cintura, cadera, ni bp.1s
+# Multiplicamos glyhb por 10 para obtener coeficientes más legibles
+hemo_mod_simp <- lm(I(glyhb*10) ~ chol + stab.glu + hdl + age + bp.1d + altura + peso, data = diabetes)
+summary(hemo_mod_simp)
+```
+
+El modelo simplificado tiene un ajuste casi idéntico al del modelo completo según el valor de R^2 ajustado. La significatividad de los predictores dentro del modelo no parece haber cambiado, excepto por _age_, aunque ya tenía un p-valor un poco por encima de 0.05 en el modelo completo. El único aspecto en el que se aprecian grandes cambios es en los valores de los coeficientes de los predictores que no eran significativos en el modelo completo.
+
+
+## 1b. Sabemos que en lugar de altura y peso, el IMC es un mejor indicador de obesidad y por otro lado, la ratio cintura/cadera es también mejor predictor que cintura y cadera por separado. Calcular estas variables y ajustar un modelo incluyéndolas en lugar de las originales y comparar ambos modelos. ¿Es posible un contraste para decidir entre ambos modelos?
+
+En primer lugar, calcularemos el IMC (masa/estatura^2) y la ratio cintura-cadera y las añadiremos al resto de datos:
+```{r}
+## IMC
+# We divide altura by 100 to change its units to meters
+# because it is usually encoded that way for IMC
+diabetes$imc <- diabetes$peso/(diabetes$altura/100)^2
+
+## Ratio cintura/cadera
+diabetes$ratiocc <- diabetes$cintura/diabetes$cadera
+```
+
+Y en segundo lugar, ajustamos los datos al modelo que tiene en cuenta el IMC y la ratio cintura/cadera:
+```{r}
+hemo_mod_imc <- lm(I(glyhb*10) ~ chol + stab.glu + hdl + age + bp.1s + bp.1d + ratiocc + imc, data = diabetes)
+summary(hemo_mod_imc)
+```
+
+¿Cómo decidir entre ambos modelos? En primer lugar, comprobaremos si son equivalentes. A primera vista, el valor de R^2 ajustado es muy parecido:
+```{r}
+c('modelo original' = summary(hemo_mod)$adj.r.squared, 'modelo modificado' = summary(hemo_mod_imc)$adj.r.squared)
+```
+
+Seguidamente contrastaremos ambos modelos mediante un test _F_. A primera vista podríamos pensar que los modelos no están anidados porque las variables _IMC_ y _ratio_ no están en el modelo completo, y que tal contraste no es posible. Sin embargo, las variables _IMC_ y _ratio_ son combinaciones lineales de variables que sí están en el modelo completo, por tanto el contraste mediante un test _F_ tiene sentido.
+
+Si los comparamos mediante ANOVA:
+```{r}
+anova(hemo_mod_imc, hemo_mod)
+```
+
+Vemos que, estadísticamente, ambos modelos son equivalentes (p-valor > 0.05). No parece haber razón para elegir uno sobre el otro.
+
+
+
+
 
 
 
