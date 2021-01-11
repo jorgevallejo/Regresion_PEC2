@@ -77,7 +77,8 @@ library(faraway)
 # library(car)
 # library(MASS)
 # library(dae)
-library(corrplot)
+library(corrplot) # Correlation plots
+library(pls) # Principal component regression
 ```
 
 # Ejercicio 1. Base de datos `diabetes.csv`
@@ -206,6 +207,64 @@ anova(hemo_mod_imc, hemo_mod)
 Vemos que, estadísticamente, ambos modelos son equivalentes (p-valor > 0.05). No parece haber razón para elegir uno sobre el otro.
 
 
+## 1c. A partir del modelo mejorado del apartado anterior, ajustar un modelo de regresión con componentes principales y determinar el número de componentes óptimo que minimice el error cuadrático medio de predicción (o su raíz cuadrada).
+
+Volvemos primeramente a examinar los valores de las variables para determinar si es necesario realizar algún tipo de escalado:
+
+```{r}
+# database with imc and ratiocc minus the variables
+# included in these last variables
+diabetes_modif <- diabetes[, ! names(diabetes) %in% c("cintura", "cadera", "altura", "peso")]
+head(diabetes_modif)
+```
+
+Contemplamos diferencias de hasta tres órdenes de magnitud entre algunas variables (e.g. entre _chol_ y _ratiocc_). Esta diferencia haría que las variables con valores mayores estuvieran sobrerrepresentadas en las componentes principales al tener mayor varianza. Para evitar ese sesgo convertiremos los valores de todas las variables a unidades estándar (restando su media y dividiendo por su desviación estándar); y calcularemos las componentes principales a partir de esos valores:
+
+```{r}
+PC_diabetes_modif <- prcomp(diabetes_modif[, 2:9], scale = TRUE)
+summary(PC_diabetes_modif)
+```
+
+Vemos que en este caso la varianza está muy repartido. Necesitamos hasta 5 componentes principales para reunir al menos el 80% de la varianza, y 7 para reunir más del 90% de la misma.
+
+Por curiosidad, veamos cuál es la aportación de las variables a cada componente principal:
+```{r}
+round(PC_diabetes_modif$rotation, digits = 2)
+```
+
+Para decidir cuántas componentes principales incluir como predictores en el modelo, buscaremos la combinación de predictores que ofrece predicciones con menor RMSE (raíz del error cuadrático medio). El método que usaremos para dividir las observaciones del set de datos en entrenamiento y validación de los modelos será el de validación cruzada (usando 10 segmentos aleatorios de los datos). Utilizaremos funciones del paquete `pls` del lenguaje **R**:
+
+```{r, fig.cap="Representación de la raíz del error cuadrático medio según el número de componentes usado en la predicción de la variable glyhb. El objetivo es obtener averiguar cuántos componentes ofrecen el menor error medio."}
+# Regresion sobre componentes principales
+set.seed(12021021)
+PC_reg <- pcr(glyhb ~ ., data = diabetes_modif, 
+              scale = TRUE, 
+              validation = "CV", 
+              ncomp = 8)
+# Estimate the RMSEP by cross-validation
+PC_reg_CV <- RMSEP(PC_reg, estimate = "CV")
+# Components at which RMSEP in minimum
+min_comp <- which.min(PC_reg_CV$val)
+# Plot
+plot(PC_reg_CV,
+     main = "RMSEP de la predicción por número de componentes",
+     xlab = "Número de componentes")
+text(min_comp-1, # x coord is components
+     y = round(PC_reg_CV$val[min_comp], digits = 2)*1.05, # y coord is RMSEP plus 10%
+     labels = round(PC_reg_CV$val[min_comp],2)) # text is RMSEP value
+```
+
+Vemos con bastante claridad en el gráfico que `r min_comp-1`  es la cantidad de componentes con la que obtenemos mejores predicciones de los valores de la variable respuesta _glyhb_ en nuestro set de datos.
+
+Finalmente, una vez decididas la cantidad de componentes principales óptima según nuestro set de datos, procedemos a reajustar el modelo de regresión:
+
+```{r}
+set.seed(5500)
+PC_reg_mod <- pcr(glyhb ~ ., data = diabetes_modif, 
+              scale = TRUE, 
+              validation = "CV", 
+              ncomp = 7)
+```
 
 
 
