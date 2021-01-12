@@ -151,7 +151,7 @@ A primera vista, las correlaciones más obvias son _cintura-cadera_, _cintura-pe
 
 También podemos usar algo más preciso, como una **matriz de correlaciones**. Debido a la cantidad de variables, nos resultará más sencillo si la representamos en un gráfico de tipo mapa de calor:
 ```{r hemo_corr, fig.cap='Matriz de correlaciones. El color azul indica correlación positiva, el color rojo correlación negativa. El tamaño de los círculos y la saturación del color son proporcionales al grado de correlación.'}
-corrplot(
+corrplot::corrplot(
 round(cor(diabetes[, -1]),2),
 type = 'upper',
 diag = FALSE,
@@ -263,7 +263,7 @@ set.seed(5500)
 PC_reg_mod <- pcr(glyhb ~ ., data = diabetes_modif, 
               scale = TRUE, 
               validation = "CV", 
-              ncomp = 7)
+              ncomp = min_comp-1)
 ```
 
 
