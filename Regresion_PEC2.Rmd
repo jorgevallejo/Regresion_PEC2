@@ -234,7 +234,7 @@ round(PC_diabetes_modif$rotation, digits = 2)
 
 Para decidir cuántas componentes principales incluir como predictores en el modelo, buscaremos la combinación de predictores que ofrece predicciones con menor RMSE (raíz del error cuadrático medio). El método que usaremos para dividir las observaciones del set de datos en entrenamiento y validación de los modelos será el de validación cruzada (usando 10 segmentos aleatorios de los datos). Utilizaremos funciones del paquete `pls` del lenguaje **R**:
 
-```{r, fig.cap="Representación de la raíz del error cuadrático medio según el número de componentes usado en la predicción de la variable glyhb. El objetivo es obtener averiguar cuántos componentes ofrecen el menor error medio."}
+```{r, fig.cap="Representación de la raíz del error cuadrático medio según el número de componentes usado en la predicción de la variable glyhb. El objetivo es averiguar cuántos componentes ofrecen el menor error medio."}
 # Regresion sobre componentes principales
 set.seed(12021021)
 PC_reg <- pcr(glyhb ~ ., data = diabetes_modif, 
@@ -265,6 +265,32 @@ PC_reg_mod <- pcr(glyhb ~ ., data = diabetes_modif,
               validation = "CV", 
               ncomp = min_comp-1)
 ```
+
+
+
+## 1d. Con el mismo modelo, ajustar un modelo de regresión por mínimos cuadrados parciales (PLS) y determinar el número óptimo de componentes.
+
+Aunque el método es diferente, los pasos que seguiremos serán similares a los del apartado anterior utilizando en esta ocasión la función `plsr()`:
+```{r, fig.cap="Representación de la raíz del error cuadrático medio según el número de componentes usado en la predicción de la variable glyhb mediante diferentes modelos generados por regresión de mínimos cuadrados parciales. El objetivo es averiguar cuántos componentes ofrecen el menor error medio."}
+set.seed(90012)
+# Compute the PLS models
+PLS_reg <- plsr(glyhb ~ ., data = diabetes_modif,
+                scale = TRUE,
+                validation = "CV")
+# Estimate the RMSEP by cross-validation
+PLS_reg_CV <- RMSEP(PLS_reg, estimate = "CV")
+# Components at which RMSEP in minimum
+min_comp <- which.min(PLS_reg_CV$val)
+# Plot
+plot(PLS_reg_CV,
+     main = "RMSEP de la predicción por número de componentes",
+     xlab = "Número de componentes")
+text(min_comp-1, # x coord is components
+     y = round(PLS_reg_CV$val[min_comp], digits = 2)*1.05, # y coord is RMSEP plus 10%
+     labels = round(PLS_reg_CV$val[min_comp],2)) # text is RMSEP value
+```
+
+Vemos en el gráfico que ha quedado señalado en `r min_comp-1` componentes la cantidad con la que obtenemos mejores predicciones de los valores de la variable respuesta _glyhb_ en nuestro set de datos.
 
 
 
