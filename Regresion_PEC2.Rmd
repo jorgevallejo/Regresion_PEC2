@@ -75,10 +75,11 @@ library(knitr)
 # library(tseries)
 library(faraway)
 # library(car)
-# library(MASS)
+library(MASS) # for ridge regression
 # library(dae)
 library(corrplot) # Correlation plots
 library(pls) # Principal component regression
+library(glmnet) # for cv.glmnet
 ```
 
 # Ejercicio 1. Base de datos `diabetes.csv`
@@ -291,6 +292,62 @@ text(min_comp-1, # x coord is components
 ```
 
 Vemos en el gráfico que ha quedado señalado en `r min_comp-1` componentes la cantidad con la que obtenemos mejores predicciones de los valores de la variable respuesta _glyhb_ en nuestro set de datos.
+
+
+## 1e. Ajustar también un modelo de regresión RIDGE y, utilizando validación cruzada, determinar el parámetro óptimo.
+
+El modelo de regresión ridge se diferencia del modelo de mínimos cuadrados en que utiliza un parámetro $\lambda$ que penaliza los estimadores $\hat \beta$ de los predictores, generando estimadores menores de los que se obtendrían por mínimos cuadrados. Es especialmente útil cuando la varianza en los datos es alta.
+
+Para seleccionar el valor óptimo de $\lambda$ mediante validación cruzada usaremos la función `cv.glmnet()` (que además escala y centra los datos de forma automática):
+
+```{r ridge tenfold cv}
+# Set train and test subsets of data
+set.seed(391)
+diabetes_train <- sample(1:nrow(diabetes_modif), nrow(diabetes_modif)/2) # half the data for each set
+diabetes_test <- -diabetes_train
+
+# Compute the lambda that gives a minimum mean cross-validated error
+ridge_diabetes <- cv.glmnet(as.matrix(diabetes_modif[diabetes_train, -1]), # predictors)
+                            diabetes_modif[diabetes_train, 1], #response
+                            alpha = 0) # ridge penalty passed to glmnet function
+
+###Notes###
+# cv.glmnet expects a matrix of predictors, not a data frame
+# https://stackoverflow.com/questions/8457624/r-glmnet-list-object-cannot-be-coerced-to-type-double
+```
+
+El valor de $\lambda$ que resulta en el menor error durante validación cruzada en el set de entrenamiento es `r round(ridge_diabetes$lambda.min, digits = 3)`, y el valor de ese error es `r ridge_diabetes$cvm[which.min(ridge_diabetes$cvm)]`.
+
+Si probamos ese valor de $\lambda$ en el subset de validación:
+```{r}
+# Predict response from test subset
+ridge_diabetes_predic <- predict(ridge_diabetes, #fitted glmnet object 
+                                 s = ridge_diabetes$lambda.min, # lambda
+                                 newx = as.matrix(diabetes_modif[diabetes_test, -1] # matrix of new values for prediction
+                                                  ))
+
+# Compute MSE error for test set
+mean((ridge_diabetes_predic - diabetes_modif[diabetes_test, 1])^2)
+```
+
+Los errores de ambos sets son bastante parecidos.
+
+Finalmente, volvemos a ajustar el modelo de regresión ridge sobre el conjunto completo de datos usando el valor de $\lambda$ elegido por validación cruzada y examinamos los coeficientes calculados para los predictores:
+```{r}
+# Fit the model
+ridge_diabetes_full <- glmnet(as.matrix(diabetes_modif[, -1]), # predictores
+                              diabetes_modif[, 1], # respuesta
+                              alpha = 0) # ridge penalty
+
+# Predict the outcomes
+predict(ridge_diabetes_full,
+        type = "coefficients", # compute the coefficients at values for s
+        s = ridge_diabetes$lambda.min)[1:9,]
+```
+
+Parece que el predictor más influyente es la **ratio cintura-cadera**. Al resto de predictores se les asignan coeficientes uno y hasta dos órdenes de magnitud menores.
+
+
 
 
 
