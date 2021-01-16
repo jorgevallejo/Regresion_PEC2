@@ -202,6 +202,7 @@ summary {
 <li><a href="#c.-a-partir-del-modelo-mejorado-del-apartado-anterior-ajustar-un-modelo-de-regresión-con-componentes-principales-y-determinar-el-número-de-componentes-óptimo-que-minimice-el-error-cuadrático-medio-de-predicción-o-su-raíz-cuadrada.">1c. A partir del modelo mejorado del apartado anterior, ajustar un modelo de regresión con componentes principales y determinar el número de componentes óptimo que minimice el error cuadrático medio de predicción (o su raíz cuadrada).</a></li>
 <li><a href="#d.-con-el-mismo-modelo-ajustar-un-modelo-de-regresión-por-mínimos-cuadrados-parciales-pls-y-determinar-el-número-óptimo-de-componentes.">1d. Con el mismo modelo, ajustar un modelo de regresión por mínimos cuadrados parciales (PLS) y determinar el número óptimo de componentes.</a></li>
 <li><a href="#e.-ajustar-también-un-modelo-de-regresión-ridge-y-utilizando-validación-cruzada-determinar-el-parámetro-óptimo.">1e. Ajustar también un modelo de regresión RIDGE y, utilizando validación cruzada, determinar el parámetro óptimo.</a></li>
+<li><a href="#f.-ajustar-por-último-un-modelo-de-regresión-lasso-y-con-validación-cruzada-hallar-el-parámetro-óptimo.">1f. Ajustar por último un modelo de regresión LASSO y, con validación cruzada, hallar el parámetro óptimo.</a></li>
 </ul></li>
 <li><a href="#apéndice-a-código">Apéndice A: Código</a></li>
 <li><a href="#apendiceB">Apéndice B: Reproducibilidad</a></li>
@@ -685,6 +686,47 @@ predict(ridge_diabetes_full,
 ##        bp.1s        bp.1d          imc      ratiocc 
 ##  0.003395110 -0.003200557  0.005651443  0.980726027</code></pre>
 <p>Parece que el predictor más influyente es la <strong>ratio cintura-cadera</strong>. Al resto de predictores se les asignan coeficientes uno y hasta dos órdenes de magnitud menores.</p>
+</div>
+<div id="f.-ajustar-por-último-un-modelo-de-regresión-lasso-y-con-validación-cruzada-hallar-el-parámetro-óptimo." class="section level2">
+<h2>1f. Ajustar por último un modelo de regresión LASSO y, con validación cruzada, hallar el parámetro óptimo.</h2>
+<p>El método de regresión <em>lasso</em> &quot;permite&quot; eliminar variables del modelo de regresión, simplificándolo. Al igual que la regresión ridge, hace menguar los coeficientes estimados de los predictores pero, a diferencia de aquella, dichos coeficientes pueden llegar a ser igual a cero, efectivamente eliminando la variable del modelo. En general, el método <em>lasso</em> es más útil cuando la respuesta depende de un pequeño número de predictores con coeficientes relativamente grandes y el resto de predictores tienen coeficientes pequeños o iguales a cero. El método <em>ridge</em> es más adecuado cuando la respuesta depende de muchos predictores con coeficientes de tamaños similares.</p>
+<p>Podemos utilizar la función <code>glmnet()</code> igual que hicimos en el apartado anterior para la regresión por el método ridge. En primer lugar, usaremos validación cruzada sobre el grupo de datos de entrenamiento para decidir el valor de <span class="math inline">\(\lambda\)</span> más adecuado:</p>
+<pre class="r"><code>set.seed(391)
+
+# Compute the lambda that gives a minimum mean cross-validated error
+lasso_diabetes &lt;- cv.glmnet(as.matrix(diabetes_modif[diabetes_train, -1]), # predictors)
+                            diabetes_modif[diabetes_train, 1], #response
+                            alpha = 1) # lasso penalty passed to glmnet function
+
+lasso_lambda &lt;- c(ridge_diabetes$lambda.min, # Lambda value 
+                  ridge_diabetes$cvm[which.min(ridge_diabetes$cvm)]) # Minimu average error</code></pre>
+<p>El valor de <span class="math inline">\(\lambda\)</span> que resulta en el menor error durante validación cruzada en el set de entrenamiento es 0.154, y el valor de ese error es 2.0569757.</p>
+<p>Si probamos ese valor de <span class="math inline">\(\lambda\)</span> en el subset de validación:</p>
+<pre class="r"><code># Predict response from test subset
+lasso_diabetes_predic &lt;- predict(lasso_diabetes, #fitted glmnet object 
+                                 s = lasso_lambda[1], # lambda
+                                 newx = as.matrix(diabetes_modif[diabetes_test, -1] # matrix of new values for prediction
+                                                  ))
+
+# Compute MSE error for test set
+mean((lasso_diabetes_predic - diabetes_modif[diabetes_test, 1])^2)</code></pre>
+<pre><code>## [1] 2.227037</code></pre>
+<p>Los errores de ambos sets son bastante parecidos.</p>
+<p>Finalmente, volvemos a ajustar el modelo de regresión lasso sobre el conjunto completo de datos usando el valor de <span class="math inline">\(\lambda\)</span> elegido por validación cruzada y examinamos los coeficientes calculados para los predictores:</p>
+<pre class="r"><code># Fit the model
+lasso_diabetes_full &lt;- glmnet(as.matrix(diabetes_modif[, -1]), # predictores
+                              diabetes_modif[, 1], # respuesta
+                              alpha = 1) # lasso penalty
+
+# Predict the outcomes
+predict(lasso_diabetes_full,
+        type = &quot;coefficients&quot;, # compute the coefficients at values for s
+        s = lasso_diabetes$lambda.min)[1:9,]</code></pre>
+<pre><code>##   (Intercept)          chol      stab.glu           hdl           age 
+##  0.7053956008  0.0057750317  0.0272438280 -0.0057952160  0.0112486607 
+##         bp.1s         bp.1d           imc       ratiocc 
+##  0.0007412437  0.0000000000  0.0000000000  0.4803130085</code></pre>
+<p>Vemos que dos de los ocho predictores tienen estimadores de coeficiente igual a cero, lo que los deja fuera del modelo final y <strong>nos sugiere un modelo simplificado de seis variables predictoras</strong>.</p>
 </div>
 </div>
 <div id="apéndice-a-código" class="section level1">
