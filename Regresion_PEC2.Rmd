@@ -301,6 +301,8 @@ El modelo de regresión ridge se diferencia del modelo de mínimos cuadrados en 
 Para seleccionar el valor óptimo de $\lambda$ mediante validación cruzada usaremos la función `cv.glmnet()` (que además escala y centra los datos de forma automática):
 
 ```{r ridge tenfold cv}
+# Sequence of lambda values to try
+la_va <- 10^seq(2, -2, length = 100)
 # Set train and test subsets of data
 set.seed(391)
 diabetes_train <- sample(1:nrow(diabetes_modif), nrow(diabetes_modif)/2) # half the data for each set
@@ -309,7 +311,8 @@ diabetes_test <- -diabetes_train
 # Compute the lambda that gives a minimum mean cross-validated error
 ridge_diabetes <- cv.glmnet(as.matrix(diabetes_modif[diabetes_train, -1]), # predictors)
                             diabetes_modif[diabetes_train, 1], #response
-                            alpha = 0) # ridge penalty passed to glmnet function
+                            alpha = 0, # ridge penalty passed to glmnet function
+                            lambda = la_va) # user-provided lambda values
 
 ###Notes###
 # cv.glmnet expects a matrix of predictors, not a data frame
@@ -337,7 +340,8 @@ Finalmente, volvemos a ajustar el modelo de regresión ridge sobre el conjunto c
 # Fit the model
 ridge_diabetes_full <- glmnet(as.matrix(diabetes_modif[, -1]), # predictores
                               diabetes_modif[, 1], # respuesta
-                              alpha = 0) # ridge penalty
+                              alpha = 0, # ridge penalty
+                              lambda = la_va) 
 
 # Predict the outcomes
 predict(ridge_diabetes_full,
@@ -346,6 +350,12 @@ predict(ridge_diabetes_full,
 ```
 
 Parece que el predictor más influyente es la **ratio cintura-cadera**. Al resto de predictores se les asignan coeficientes uno y hasta dos órdenes de magnitud menores.
+
+```{r ridge coef plot, fig.cap="Gráfica de valores de log(lambda) frente a coeficientes de los predictores. La línea roja representa el estimador del coeficiente de la variable `ratiocc`; la línea vertical intermitente marca el valor de log(lambda) que minimiza la media de errores al cuadrado (MSE)."}
+plot(ridge_diabetes_full, xvar = 'lambda')
+abline(v=log(ridge_diabetes$lambda.min), lty = 2)
+```
+
 
 
 ## 1f. Ajustar por último un modelo de regresión LASSO y, con validación cruzada, hallar el parámetro óptimo.
@@ -360,7 +370,8 @@ set.seed(391)
 # Compute the lambda that gives a minimum mean cross-validated error
 lasso_diabetes <- cv.glmnet(as.matrix(diabetes_modif[diabetes_train, -1]), # predictors)
                             diabetes_modif[diabetes_train, 1], #response
-                            alpha = 1) # lasso penalty passed to glmnet function
+                            alpha = 1, # lasso penalty passed to glmnet function
+                            lambda = la_va) 
 
 lasso_lambda <- c(ridge_diabetes$lambda.min, # Lambda value 
                   ridge_diabetes$cvm[which.min(ridge_diabetes$cvm)]) # Minimu average error
@@ -389,7 +400,8 @@ Finalmente, volvemos a ajustar el modelo de regresión lasso sobre el conjunto c
 # Fit the model
 lasso_diabetes_full <- glmnet(as.matrix(diabetes_modif[, -1]), # predictores
                               diabetes_modif[, 1], # respuesta
-                              alpha = 1) # lasso penalty
+                              alpha = 1, # lasso penalty passed to glmnet function
+                            lambda = la_va)
 
 # Predict the outcomes
 predict(lasso_diabetes_full,
@@ -399,9 +411,12 @@ predict(lasso_diabetes_full,
 
 Vemos que dos de los ocho predictores tienen estimadores de coeficiente igual a cero, lo que los deja fuera del modelo final y **nos sugiere un modelo simplificado de seis variables predictoras**.
 
+```{r lasso coef plot, fig.cap="Gráfica de valores de log(lambda) frente a coeficientes de los predictores. La línea roja representa el estimador del coeficiente de la variable `ratiocc`; la línea vertical intermitente marca el valor de log(lambda) que minimiza la media de errores al cuadrado (MSE)."}
+plot(lasso_diabetes_full, xvar = 'lambda')
+abline(v=log(lasso_diabetes$lambda.min), lty = 2)
+```
 
-
-
+Podemos ver en la gráfica cómo, a medida que aumenta lambda, los estimadores para los coeficientes van progresivamente igualándose a cero. Sin embargo, en la gráfica equivalente para la regresión por el métido ridge, los estimadores nunca llegan a igualarse a cero sino que sólo se aproximan a ese valor sin alcanzarlo.
 
 
 
