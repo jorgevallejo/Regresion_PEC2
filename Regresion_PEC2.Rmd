@@ -19,7 +19,8 @@ output:
 knit: (function(inputFile, encoding) {
   rmarkdown::render(inputFile, encoding = encoding,
                     output_format = NULL,
-                    output_dir = "results") })
+                    output_dir = "results",
+                    output_file = "vallejo_jorge_Reg_PEC2.html") })
 # And:
 # https://stackoverflow.com/a/46007686/10647267
 
@@ -104,7 +105,7 @@ Si examinamos la estructura de la base de datos:
 str(diabetes)
 ```
 
-Vemos que se compone de de 377 observaciones y 11 variables. Todas las variables han sido correctamente identificadas como numéricas.
+Vemos que se compone de 377 observaciones y 11 variables. Todas las variables han sido correctamente identificadas como numéricas.
 
 Finalmente, una forma rápida de buscar valores anómalos y valores ausentes es mediante el resumen numérico:
 ```{r}
@@ -417,6 +418,48 @@ abline(v=log(lasso_diabetes$lambda.min), lty = 2)
 ```
 
 Podemos ver en la gráfica cómo, a medida que aumenta lambda, los estimadores para los coeficientes van progresivamente igualándose a cero. Sin embargo, en la gráfica equivalente para la regresión por el métido ridge, los estimadores nunca llegan a igualarse a cero sino que sólo se aproximan a ese valor sin alcanzarlo.
+
+
+# Ejercicio 2. Base de datos `gas_pressure.txt`
+
+Como preparación al ejercicio, cargaremos los datos a memoria y examinaremos las características y estructura de los mismos.
+
+```{r read gas pressure data}
+# Reading and loading data from file gas_pressure.txt
+gas_pressure <- read.table("./data/gas_pressure.txt",
+           header = TRUE
+           )
+
+kable(
+  head(gas_pressure),
+  caption = "Ejemplo de las primeras seis observaciones en la base de datos `gas_pressure`.",
+  align = 'c'
+)
+```
+
+Si examinamos la estructura de la base de datos:
+```{r}
+str(gas_pressure)
+```
+
+Vemos que se compone de 40 observaciones y 2 variables. Todas las variables han sido correctamente identificadas como numéricas.
+
+Finalmente, una forma rápida de buscar valores anómalos y valores ausentes es mediante el resumen numérico:
+```{r}
+summary(gas_pressure)
+```
+
+No parece haber valores anómalos (entendidos como exageradamente elevados o exageradamente pequeños) en ninguna de las variables. Aunque es difícil de asegurar, ya que no estoy familiarizado con estas variables. En cualquier caso, no parece haber ningún valor que destaque. Tampoco se ha detectado que falte ningún valor.
+
+Finalmente, podríamos incluir un resumen gráfico de las variables para hacernos una idea de la distribución de valores en cada una:
+```{r resumen_grafico gas_pressure, fig.cap="Gráficos de densidad mostrando la distribución de valores para cada una de las variables. Ambas variables tienen una distribución similar a la normal. Resulta notable que ambos gráficos presentan el mismo perfil."}
+par(mfrow=c(1,2))
+for (i in 1:ncol(gas_pressure)){
+plot(density(gas_pressure[,i]),
+     main = colnames(gas_pressure[i]),
+     xlab = "", ylab = "", yaxt = 'n')
+}
+```
 
 
 
