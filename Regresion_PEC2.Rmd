@@ -556,6 +556,60 @@ plot(gas_mod_inv_p4, which = 1)
 De las tres transformaciones aplicadas, invertir los valores de las variables respuesta y la variable predictora es la transformación que alivia en mayor medida el problema de los errores de regresión no aleatorios (ver la primera de las tres gráficas anteriores).
 
 
+## 2d. Ahora vamos con la regresión ponderada o WLS
+
+**Construimos una columna de datos con las temperaturas redondeadas de forma que los valores se repitan.**
+
+Esto lo hacemos para generar grupos de datos. Posteriormente calcularemos la varianza en cada grupo de datos, ya que anteriormente vimos que la varianza no es homogénea y diferentes zonas del rango de temperaturas corresponden a diferentes varianzas.
+
+```{r}
+temp_r <- 3 * round(gas_pressure$temp/3)
+## Division and posterior multiplication by three
+## has the effect of augmenting granularity
+# with more repeated values (wider groups)
+
+grupos <- length(unique(temp_r))
+```
+
+En total, dividiremos los datos en `r grupos` grupos según el valor de temperatura.
+
+**Calcularemos la desviación estándar de la presión en cada grupo de temperaturas redondeadas.**
+
+```{r}
+# Indexes for ordering the data
+# not relevant in this case, since the values of temperature are already
+# somewhat ordered and get completely ordered when rounded
+orden <- order(temp_r)
+
+# Order the original data by the index above
+gas_pressure_ord <- gas_pressure[orden,]
+
+# Compute the mean of the predictor for each group
+temperature_mean <- unlist(lapply(split(gas_pressure_ord$temp, temp_r[orden]), mean))
+# Compute variance of the response for each group
+pressure_var <- unlist(lapply(split(gas_pressure_ord$pressure, temp_r[orden]), var))
+```
+
+Si suponemos que la varianza sigue el modelo
+$$
+\log(\sigma_i^2) = \log(\gamma_1) + \gamma_2 · \log(temp_i)
+$$
+
+Podemos estimar $\gamma_1$ y $\gamma_2$ mediante una regresión lineal del logaritmo de las medias de temperatura sobre el logaritmo de las varianzas. El punto de intercepción nos dará la estimación de $\gamma_1$, y la pendiente la estimación de $\gamma_2$:
+
+```{r}
+gas_pressure_logmod <- lm(log(pressure_var) ~ log(temperature_mean))
+summary(gas_pressure_logmod)
+```
+
+**$\gamma_1$:** `r coef(gas_pressure_logmod)[[1]]`  
+**$\gamma_2$:** `r coef(gas_pressure_logmod)[[2]]`  
+
+
+
+
+
+
 
 # Apéndice A: Código
 
