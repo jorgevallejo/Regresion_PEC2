@@ -83,6 +83,7 @@ library(corrplot) # Correlation plots
 library(pls) # Principal component regression
 library(glmnet) # for cv.glmnet
 library(caret) # for BoxCoxTrans()
+library(nlme) # for GLS
 ```
 
 # Ejercicio 1. Base de datos `diabetes.csv`
@@ -643,8 +644,18 @@ abline(h=0, lty=2)
 ```
 
 
+## 2g. Una solución alternativa es considerar un modelo GLS con la condición $\sigma_i = \gamma_0 + temp_i^{\gamma_1}$ y hallar los pesos que simultáneamente estiman los parámetros $\beta$ y las $\gamma$ por máxima verosimilitud. Para ello, disponemos del paquete `nlme` y su función `gls()`.
 
+```{r}
+# Fit model
+gas_pressure_gls_mod <- gls(pressure ~ temp, data = gas_pressure, weights = varConstPower(form =~temp))
+summary(gas_pressure_gls_mod)
+```
 
+**$\hat \gamma_0$:** 0.09906465  
+**$\hat \gamma_1$:** `r gas_pressure_gls_mod$modelStruct$varStruct[[2]]`  
+**$\hat \beta_0$:** `r gas_pressure_gls_mod$coefficients[[1]]`  
+**$\hat \beta_1$:** `r gas_pressure_gls_mod$coefficients[[2]]`   
 
 
 

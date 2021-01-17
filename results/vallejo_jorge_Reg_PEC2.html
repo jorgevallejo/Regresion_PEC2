@@ -1037,6 +1037,44 @@ Gráfica de los residuos ponderados frente a la temperatura. Ya no se observa el
 </p>
 </div>
 </div>
+<div id="g.-una-solución-alternativa-es-considerar-un-modelo-gls-con-la-condición-sigma_i-gamma_0-temp_igamma_1-y-hallar-los-pesos-que-simultáneamente-estiman-los-parámetros-beta-y-las-gamma-por-máxima-verosimilitud.-para-ello-disponemos-del-paquete-nlme-y-su-función-gls." class="section level2">
+<h2>2g. Una solución alternativa es considerar un modelo GLS con la condición <span class="math inline">\(\sigma_i = \gamma_0 + temp_i^{\gamma_1}\)</span> y hallar los pesos que simultáneamente estiman los parámetros <span class="math inline">\(\beta\)</span> y las <span class="math inline">\(\gamma\)</span> por máxima verosimilitud. Para ello, disponemos del paquete <code>nlme</code> y su función <code>gls()</code>.</h2>
+<pre class="r"><code># Fit model
+gas_pressure_gls_mod &lt;- gls(pressure ~ temp, data = gas_pressure, weights = varConstPower(form =~temp))
+summary(gas_pressure_gls_mod)</code></pre>
+<pre><code>## Generalized least squares fit by REML
+##   Model: pressure ~ temp 
+##   Data: gas_pressure 
+##        AIC      BIC    logLik
+##   234.2322 242.4202 -112.1161
+## 
+## Variance function:
+##  Structure: Constant plus power of variance covariate
+##  Formula: ~temp 
+##  Parameter estimates:
+##      const      power 
+## 0.09906465 2.36008616 
+## 
+## Coefficients:
+##                Value Std.Error  t-value p-value
+## (Intercept) 6.685184 1.1420721  5.85356       0
+## temp        3.946379 0.0412054 95.77324       0
+## 
+##  Correlation: 
+##      (Intr)
+## temp -0.96 
+## 
+## Standardized residuals:
+##        Min         Q1        Med         Q3        Max 
+## -1.9373696 -0.6547498  0.1737098  0.5516803  2.3900023 
+## 
+## Residual standard error: 0.0005607637 
+## Degrees of freedom: 40 total; 38 residual</code></pre>
+<p><strong><span class="math inline">\(\hat \gamma_0\)</span>:</strong> 0.09906465<br />
+<strong><span class="math inline">\(\hat \gamma_1\)</span>:</strong> 2.3600862<br />
+<strong><span class="math inline">\(\hat \beta_0\)</span>:</strong> 6.685184<br />
+<strong><span class="math inline">\(\hat \beta_1\)</span>:</strong> 3.9463787</p>
+</div>
 </div>
 <div id="apéndice-a-código" class="section level1">
 <h1>Apéndice A: Código</h1>
@@ -1065,9 +1103,9 @@ Gráfica de los residuos ponderados frente a la temperatura. Ya no se observa el
 ## [1] stats     graphics  grDevices utils     datasets  methods   base     
 ## 
 ## other attached packages:
-##  [1] caret_6.0-86    ggplot2_3.3.2   lattice_0.20-41 glmnet_4.1     
-##  [5] Matrix_1.2-18   pls_2.7-3       corrplot_0.84   MASS_7.3-53    
-##  [9] faraway_1.0.7   knitr_1.25     
+##  [1] nlme_3.1-149    caret_6.0-86    ggplot2_3.3.2   lattice_0.20-41
+##  [5] glmnet_4.1      Matrix_1.2-18   pls_2.7-3       corrplot_0.84  
+##  [9] MASS_7.3-53     faraway_1.0.7   knitr_1.25     
 ## 
 ## loaded via a namespace (and not attached):
 ##  [1] shape_1.4.5          reshape2_1.4.3       recipes_0.1.15      
@@ -1089,8 +1127,7 @@ Gráfica de los residuos ponderados frente a la temperatura. Ya no se observa el
 ## [49] tools_3.6.3          lme4_1.1-21          ipred_0.9-9         
 ## [52] e1071_1.7-4          prodlim_2019.11.13   nnet_7.3-14         
 ## [55] scales_1.1.1         crayon_1.3.4         glue_1.4.1          
-## [58] purrr_0.3.4          rlang_0.4.8          nlme_3.1-149        
-## [61] grid_3.6.3</code></pre>
+## [58] purrr_0.3.4          rlang_0.4.8          grid_3.6.3</code></pre>
 </div>
 <div id="referencias" class="section level1">
 <h1>Referencias</h1>
