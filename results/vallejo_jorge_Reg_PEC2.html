@@ -209,6 +209,7 @@ summary {
 <li><a href="#b.-probar-entre-el-conjunto-de-transformaciones-box-cox-si-alguna-mejora-la-heterocedasticidad-de-la-regresión-lineal-simple.">2b. Probar entre el conjunto de transformaciones Box-Cox si alguna mejora la heterocedasticidad de la regresión lineal simple.</a></li>
 <li><a href="#c.-como-sabemos-que-la-presión-de-un-gas-en-un-tanque-es-proporcional-a-la-temperatura-calcular-la-regresión-si-la-variable-respuesta-es-la-inversa-de-la-presión.-estudiar-la-diagnosis-de-este-modelo.-aparece-un-problema-estructural">2c. Como sabemos que la presión de un gas en un tanque es proporcional a la temperatura, calcular la regresión si la variable respuesta es la inversa de la presión. Estudiar la diagnosis de este modelo. ¿Aparece un problema estructural?</a></li>
 <li><a href="#d.-ahora-vamos-con-la-regresión-ponderada-o-wls">2d. Ahora vamos con la regresión ponderada o WLS</a></li>
+<li><a href="#e.-tomamos-un-valor-entero-g-próximo-a-gamma_2-y-consideramos-los-pesos-como-omega_i-approx-temp-g.-calcular-la-regresión-ponderada-con-esos-pesos.">2e. Tomamos un valor entero <em>g</em> próximo a <span class="math inline">\(\gamma_2\)</span> y consideramos los pesos como <span class="math inline">\(\omega_i \approx temp^{-g}\)</span>. Calcular la regresión ponderada con esos pesos.</a></li>
 </ul></li>
 <li><a href="#apéndice-a-código">Apéndice A: Código</a></li>
 <li><a href="#apendiceB">Apéndice B: Reproducibilidad</a></li>
@@ -997,6 +998,33 @@ summary(gas_pressure_logmod)</code></pre>
 ## F-statistic: 6.456 on 1 and 12 DF,  p-value: 0.02589</code></pre>
 <p><strong><span class="math inline">\(\gamma_1\)</span>:</strong> -19.9808199<br />
 <strong><span class="math inline">\(\gamma_2\)</span>:</strong> 5.8531797</p>
+</div>
+<div id="e.-tomamos-un-valor-entero-g-próximo-a-gamma_2-y-consideramos-los-pesos-como-omega_i-approx-temp-g.-calcular-la-regresión-ponderada-con-esos-pesos." class="section level2">
+<h2>2e. Tomamos un valor entero <em>g</em> próximo a <span class="math inline">\(\gamma_2\)</span> y consideramos los pesos como <span class="math inline">\(\omega_i \approx temp^{-g}\)</span>. Calcular la regresión ponderada con esos pesos.</h2>
+<pre class="r"><code># Choose gamma 2
+g &lt;- round(coef(gas_pressure_logmod)[[2]])
+
+# Fit to weighted model
+gas_pressure_wlm &lt;- lm(pressure ~ temp, data = gas_pressure, weights = gas_pressure$temp^-g)
+summary(gas_pressure_wlm)</code></pre>
+<pre><code>## 
+## Call:
+## lm(formula = pressure ~ temp, data = gas_pressure, weights = gas_pressure$temp^-g)
+## 
+## Weighted Residuals:
+##        Min         1Q     Median         3Q        Max 
+## -8.656e-05 -3.830e-05  6.763e-06  3.359e-05  1.467e-04 
+## 
+## Coefficients:
+##             Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept)  6.57170    1.05462   6.231 2.74e-07 ***
+## temp         3.95067    0.04136  95.511  &lt; 2e-16 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 5.228e-05 on 38 degrees of freedom
+## Multiple R-squared:  0.9959, Adjusted R-squared:  0.9957 
+## F-statistic:  9122 on 1 and 38 DF,  p-value: &lt; 2.2e-16</code></pre>
 </div>
 </div>
 <div id="apéndice-a-código" class="section level1">
