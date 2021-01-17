@@ -6,6 +6,7 @@ date: '`r format(Sys.Date(),"%e de %B, %Y")`'
 output:
   html_document:
      toc: true
+     toc_depth: 1
 # pdf_document:
 #   number_sections: true
 # toc: true
@@ -617,6 +618,8 @@ gas_pressure_wlm <- lm(pressure ~ temp, data = gas_pressure, weights = gas_press
 summary(gas_pressure_wlm)
 ```
 
+
+## 2f. Realizar la diagnosis del modelo de regresión ponderada
 
 
 

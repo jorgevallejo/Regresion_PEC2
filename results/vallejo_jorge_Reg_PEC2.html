@@ -196,21 +196,8 @@ summary {
 
 <div id="TOC">
 <ul>
-<li><a href="#ejercicio-1.-base-de-datos-diabetes.csv">Ejercicio 1. Base de datos <code>diabetes.csv</code></a><ul>
-<li><a href="#ejercicio-1a.-ajustar-un-modelo-lineal-para-explicar-la-variable-hemoglobina-glicosilada-en-función-del-resto-de-variables-de-la-base-de-datos.-como-el-número-de-variables-predictoras-es-elevado-investigar-la-posible-multicolinealidad-de-este-modelo-de-regresión.">Ejercicio 1a. Ajustar un modelo lineal para explicar la variable hemoglobina glicosilada en función del resto de variables de la base de datos. Como el número de variables predictoras es elevado, investigar la posible multicolinealidad de este modelo de regresión.</a></li>
-<li><a href="#b.-sabemos-que-en-lugar-de-altura-y-peso-el-imc-es-un-mejor-indicador-de-obesidad-y-por-otro-lado-la-ratio-cinturacadera-es-también-mejor-predictor-que-cintura-y-cadera-por-separado.-calcular-estas-variables-y-ajustar-un-modelo-incluyéndolas-en-lugar-de-las-originales-y-comparar-ambos-modelos.-es-posible-un-contraste-para-decidir-entre-ambos-modelos">1b. Sabemos que en lugar de altura y peso, el IMC es un mejor indicador de obesidad y por otro lado, la ratio cintura/cadera es también mejor predictor que cintura y cadera por separado. Calcular estas variables y ajustar un modelo incluyéndolas en lugar de las originales y comparar ambos modelos. ¿Es posible un contraste para decidir entre ambos modelos?</a></li>
-<li><a href="#c.-a-partir-del-modelo-mejorado-del-apartado-anterior-ajustar-un-modelo-de-regresión-con-componentes-principales-y-determinar-el-número-de-componentes-óptimo-que-minimice-el-error-cuadrático-medio-de-predicción-o-su-raíz-cuadrada.">1c. A partir del modelo mejorado del apartado anterior, ajustar un modelo de regresión con componentes principales y determinar el número de componentes óptimo que minimice el error cuadrático medio de predicción (o su raíz cuadrada).</a></li>
-<li><a href="#d.-con-el-mismo-modelo-ajustar-un-modelo-de-regresión-por-mínimos-cuadrados-parciales-pls-y-determinar-el-número-óptimo-de-componentes.">1d. Con el mismo modelo, ajustar un modelo de regresión por mínimos cuadrados parciales (PLS) y determinar el número óptimo de componentes.</a></li>
-<li><a href="#e.-ajustar-también-un-modelo-de-regresión-ridge-y-utilizando-validación-cruzada-determinar-el-parámetro-óptimo.">1e. Ajustar también un modelo de regresión RIDGE y, utilizando validación cruzada, determinar el parámetro óptimo.</a></li>
-<li><a href="#f.-ajustar-por-último-un-modelo-de-regresión-lasso-y-con-validación-cruzada-hallar-el-parámetro-óptimo.">1f. Ajustar por último un modelo de regresión LASSO y, con validación cruzada, hallar el parámetro óptimo.</a></li>
-</ul></li>
-<li><a href="#ejercicio-2.-base-de-datos-gas_pressure.txt">Ejercicio 2. Base de datos <code>gas_pressure.txt</code></a><ul>
-<li><a href="#a.-mostrar-el-problema-de-heterocedasticidad-en-la-regresión-lineal-con-la-presión-como-variable-respuesta-y-la-temperatura-como-explicativa.-realizar-un-gráfico-y-un-test-apropiados.">2a. Mostrar el problema de heterocedasticidad en la regresión lineal con la presión como variable respuesta y la temperatura como explicativa. Realizar un gráfico y un test apropiados.</a></li>
-<li><a href="#b.-probar-entre-el-conjunto-de-transformaciones-box-cox-si-alguna-mejora-la-heterocedasticidad-de-la-regresión-lineal-simple.">2b. Probar entre el conjunto de transformaciones Box-Cox si alguna mejora la heterocedasticidad de la regresión lineal simple.</a></li>
-<li><a href="#c.-como-sabemos-que-la-presión-de-un-gas-en-un-tanque-es-proporcional-a-la-temperatura-calcular-la-regresión-si-la-variable-respuesta-es-la-inversa-de-la-presión.-estudiar-la-diagnosis-de-este-modelo.-aparece-un-problema-estructural">2c. Como sabemos que la presión de un gas en un tanque es proporcional a la temperatura, calcular la regresión si la variable respuesta es la inversa de la presión. Estudiar la diagnosis de este modelo. ¿Aparece un problema estructural?</a></li>
-<li><a href="#d.-ahora-vamos-con-la-regresión-ponderada-o-wls">2d. Ahora vamos con la regresión ponderada o WLS</a></li>
-<li><a href="#e.-tomamos-un-valor-entero-g-próximo-a-gamma_2-y-consideramos-los-pesos-como-omega_i-approx-temp-g.-calcular-la-regresión-ponderada-con-esos-pesos.">2e. Tomamos un valor entero <em>g</em> próximo a <span class="math inline">\(\gamma_2\)</span> y consideramos los pesos como <span class="math inline">\(\omega_i \approx temp^{-g}\)</span>. Calcular la regresión ponderada con esos pesos.</a></li>
-</ul></li>
+<li><a href="#ejercicio-1.-base-de-datos-diabetes.csv">Ejercicio 1. Base de datos <code>diabetes.csv</code></a></li>
+<li><a href="#ejercicio-2.-base-de-datos-gas_pressure.txt">Ejercicio 2. Base de datos <code>gas_pressure.txt</code></a></li>
 <li><a href="#apéndice-a-código">Apéndice A: Código</a></li>
 <li><a href="#apendiceB">Apéndice B: Reproducibilidad</a></li>
 <li><a href="#referencias">Referencias</a></li>
@@ -1025,6 +1012,9 @@ summary(gas_pressure_wlm)</code></pre>
 ## Residual standard error: 5.228e-05 on 38 degrees of freedom
 ## Multiple R-squared:  0.9959, Adjusted R-squared:  0.9957 
 ## F-statistic:  9122 on 1 and 38 DF,  p-value: &lt; 2.2e-16</code></pre>
+</div>
+<div id="f.-realizar-la-diagnosis-del-modelo-de-regresión-ponderada" class="section level2">
+<h2>2f. Realizar la diagnosis del modelo de regresión ponderada</h2>
 </div>
 </div>
 <div id="apéndice-a-código" class="section level1">
