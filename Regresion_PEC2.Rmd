@@ -658,6 +658,30 @@ summary(gas_pressure_gls_mod)
 **$\hat \beta_1$:** `r gas_pressure_gls_mod$coefficients[[2]]`   
 
 
+## 2h. Dibujar el gráfico de dispersión que aparece al final del apartado 4.4.5.2 y añadir la recta del modelo GLS.
+
+```{r, fig.cap="Gráfico de dispersión de presión frente a temperatura. La línea azul representa el ajuste al modelo de variables transformadas (inversa de presion frente a inversa de temperatura). La línea roja representa el ajuste al modelo ponderado por mínimos cuadrados generalizados. Este último parece ajustarse más a los datos."}
+# Slope and intercept
+transformed_fit <- c(coef(gas_mod_inv_p2))
+weighted_fit <- c(gas_pressure_gls_mod$coefficients[[1]],
+                  gas_pressure_gls_mod$coefficients[[2]])
+# Scatterplot
+plot(pressure ~ temp, data = gas_pressure,
+     xlab = "Temperature",
+     ylab = "Pressure",
+     pch = 20)
+# Fitted lines
+abline(a = -transformed_fit[1]/transformed_fit[2], 
+       b= 1/transformed_fit[2], col = "blue")
+abline(coef= weighted_fit, col = "red")
+# Plot legend
+legend(21, y = 270,
+       legend = c("Transformed Fit", "Weighted Fit"),
+       col = c("blue", "red"),
+       lty = c(1,1))
+```
+
+
 
 # Apéndice A: Código
 
