@@ -523,10 +523,37 @@ knitr::include_graphics(interfile) # Draw image
 ```
 
 
+## 2c. Como sabemos que la presión de un gas en un tanque es proporcional a la temperatura, calcular la regresión si la variable respuesta es la inversa de la presión. Estudiar la diagnosis de este modelo. ¿Aparece un problema estructural?
+
+```{r presion inversa}
+gas_mod_inv_p <- lm(1/pressure ~ temp, data = gas_pressure)
+sumary(gas_mod_inv_p)
+```
+
+```{r, fig.cap="Residuos frente a valores ajustados. Se aprecia claramente que el valor de los residuos sigue una estructura subyacente."}
+plot(gas_mod_inv_p, which = 1)
+```
 
 
+**Finalmente, además de esta transformación para la respuesta, también hay que transformar la variable regresora. Probar con las transformaciones más habituales y elegir el mejor modelo.**
 
+Las transformaciones más habituales son la cuadrática, la raíz cuadrada y la inversa. Compararemos cómo afecta aplicar cada transformación a la variable predictora:
+```{r}
+gas_mod_inv_p2 <- lm(1/pressure ~ I(1/temp), data = gas_pressure)
+gas_mod_inv_p3 <- lm(1/pressure ~ I(temp^2), data = gas_pressure)
+gas_mod_inv_p4 <- lm(1/pressure ~ sqrt(temp), data = gas_pressure)
+```
+```{r}
+plot(gas_mod_inv_p2, which = 1)
+```
+```{r}
+plot(gas_mod_inv_p3, which = 1)
+```
+```{r}
+plot(gas_mod_inv_p4, which = 1)
+```
 
+De las tres transformaciones aplicadas, invertir los valores de las variables respuesta y la variable predictora es la transformación que alivia en mayor medida el problema de los errores de regresión no aleatorios (ver la primera de las tres gráficas anteriores).
 
 
 
