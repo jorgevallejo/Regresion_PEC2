@@ -462,7 +462,28 @@ plot(density(gas_pressure[,i]),
 ```
 
 
+## 2a. Mostrar el problema de heterocedasticidad en la regresión lineal con la presión como variable respuesta y la temperatura como explicativa. Realizar un gráfico y un test apropiados.
 
+En primer lugar, ajustamos los datos a un modelo lineal:
+```{r}
+gas_mod <- lm(pressure ~ temp, data =  gas_pressure)
+sumary(gas_mod)
+```
+
+Si representamos en una gráfica los valores ajustados frente a los residuos:
+```{r, fig.cap="(izq.) Residuos frente a valores ajustados. Obśervese la forma de embudo que adquiere la nube de puntos, creciendo hacia los valores ajustados mayores. (der.) Raíz cuadrada de los residuos estandarizados frente a valores ajustados. Obsérvese que la nube de puntos se ajusta a una diagonal creciente en la dirección de los valores ajustados mayores."}
+par(mfrow = c(1,2))
+plot(gas_mod, which = c(1,3))
+```
+
+El tamaño de los residuos parece aumentar con el valor de la variable _temp_, lo que apunta a que la varianza no es la misma en todo el rango de datos sino que aumenta con el propio valor de estos.
+
+Además de gráficamente podemos hacer un estudio numérico comprobando si los errores de la regresión son independientes o si están relacionados con los valores ajustados al modelo:
+```{r}
+sumary(lm(sqrt(abs(residuals(gas_mod)))~fitted(gas_mod)))
+```
+
+El estimador del coeficiente de los valores ajustados es significativo, y el valor de R^2 - siendo bajo - es mucho mayor de lo que esperaríamos si el valor de los errores fuera aleatorio. Por esto, vemos que hay relación entre el valor de la variable _temp_ y el valor de los errores de la regresión, apuntando a que la varianza no es homogénea sino que depende de aquellos valores.
 
 
 
