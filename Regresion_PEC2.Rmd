@@ -76,11 +76,12 @@ library(knitr)
 # library(tseries)
 library(faraway)
 # library(car)
-library(MASS) # for ridge regression
+library(MASS) # for boxcox plots
 # library(dae)
 library(corrplot) # Correlation plots
 library(pls) # Principal component regression
 library(glmnet) # for cv.glmnet
+library(caret) # for BoxCoxTrans()
 ```
 
 # Ejercicio 1. Base de datos `diabetes.csv`
@@ -484,6 +485,48 @@ sumary(lm(sqrt(abs(residuals(gas_mod)))~fitted(gas_mod)))
 ```
 
 El estimador del coeficiente de los valores ajustados es significativo, y el valor de R^2 - siendo bajo - es mucho mayor de lo que esperaríamos si el valor de los errores fuera aleatorio. Por esto, vemos que hay relación entre el valor de la variable _temp_ y el valor de los errores de la regresión, apuntando a que la varianza no es homogénea sino que depende de aquellos valores.
+
+
+## 2b. Probar entre el conjunto de transformaciones Box-Cox si alguna mejora la heterocedasticidad de la regresión lineal simple.
+
+El método Box-Cox sirve para encontrar una transformación de las variables que sirva para encontrar un mejor ajuste de los datos. Se trata de encontrar un estimador ($\hat \lambda$) al que elevaremos nuestra variable. Para calcular ese estimador usaremos la función `BoxCoxTrans()` del paquete `caret`.
+
+```{r boxcox temp}
+BoxCoxTrans(gas_pressure$temp)
+```
+
+```{r boxcox pressure}
+BoxCoxTrans(gas_pressure$pressure)
+```
+
+Los tests sugieren que no lograremos un mejor ajuste transformando ninguna de las dos variables.
+
+
+También podemos optar por una representación gráfica, incluyendo intervalos de confianza para lambda:
+```{r, fig.cap="Bondad de ajuste frente a lambda estimada para la variable respuesta pressure. Las líneas punteadas delimitan el intervalo de confianza del 95%. El valor 1 está incluido dentro del intevalo, lo que señala a que no hay razón suficiente para realizar la transformación."}
+
+interfile <- "images/boxcox_pressure.png"
+
+#save grid of graphs
+if(file.exists(interfile)){
+  knitr::include_graphics(interfile) # Draw image
+}else{
+  png("./images/boxcox_pressure.png")
+boxcox(gas_mod, lambda=seq(0.5,1.5,by=0.1)) # Generate plot
+dev.off() # close device
+knitr::include_graphics(interfile) # Draw image
+}
+
+## For some reason, if the graph is generated on the fly while knitting execution ends with an error. Pre-generating the plot
+## as a png and loading it during knitting is a work-around that prevents it.
+
+```
+
+
+
+
+
+
 
 
 
