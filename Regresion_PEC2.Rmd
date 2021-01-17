@@ -6,6 +6,7 @@ date: '`r format(Sys.Date(),"%e de %B, %Y")`'
 output:
   html_document:
      toc: true
+     toc_depth: 1
 # pdf_document:
 #   number_sections: true
 # toc: true
@@ -76,11 +77,13 @@ library(knitr)
 # library(tseries)
 library(faraway)
 # library(car)
-library(MASS) # for ridge regression
+library(MASS) # for boxcox plots
 # library(dae)
 library(corrplot) # Correlation plots
 library(pls) # Principal component regression
 library(glmnet) # for cv.glmnet
+library(caret) # for BoxCoxTrans()
+library(nlme) # for GLS
 ```
 
 # Ejercicio 1. Base de datos `diabetes.csv`
@@ -462,7 +465,221 @@ plot(density(gas_pressure[,i]),
 ```
 
 
+## 2a. Mostrar el problema de heterocedasticidad en la regresión lineal con la presión como variable respuesta y la temperatura como explicativa. Realizar un gráfico y un test apropiados.
 
+En primer lugar, ajustamos los datos a un modelo lineal:
+```{r}
+gas_mod <- lm(pressure ~ temp, data =  gas_pressure)
+sumary(gas_mod)
+```
+
+Si representamos en una gráfica los valores ajustados frente a los residuos:
+```{r, fig.cap="(izq.) Residuos frente a valores ajustados. Obśervese la forma de embudo que adquiere la nube de puntos, creciendo hacia los valores ajustados mayores. (der.) Raíz cuadrada de los residuos estandarizados frente a valores ajustados. Obsérvese que la nube de puntos se ajusta a una diagonal creciente en la dirección de los valores ajustados mayores."}
+par(mfrow = c(1,2))
+plot(gas_mod, which = c(1,3))
+```
+
+
+```{r}
+plot(gas_pressure$temp,
+     gas_mod$residuals,
+     ylab = "Residuos",
+     xlab = "Temperatura")
+abline(h=0, lty=2)
+```
+
+El tamaño de los residuos parece aumentar con el valor de la variable _temp_, lo que apunta a que la varianza no es la misma en todo el rango de datos sino que aumenta con el propio valor de estos.
+
+Además de gráficamente podemos hacer un estudio numérico comprobando si los errores de la regresión son independientes o si están relacionados con los valores ajustados al modelo:
+```{r}
+sumary(lm(sqrt(abs(residuals(gas_mod)))~fitted(gas_mod)))
+```
+
+El estimador del coeficiente de los valores ajustados es significativo, y el valor de R^2 - siendo bajo - es mucho mayor de lo que esperaríamos si el valor de los errores fuera aleatorio. Por esto, vemos que hay relación entre el valor de la variable _temp_ y el valor de los errores de la regresión, apuntando a que la varianza no es homogénea sino que depende de aquellos valores.
+
+
+## 2b. Probar entre el conjunto de transformaciones Box-Cox si alguna mejora la heterocedasticidad de la regresión lineal simple.
+
+El método Box-Cox sirve para encontrar una transformación de las variables que sirva para encontrar un mejor ajuste de los datos. Se trata de encontrar un estimador ($\hat \lambda$) al que elevaremos nuestra variable. Para calcular ese estimador usaremos la función `BoxCoxTrans()` del paquete `caret`.
+
+```{r boxcox temp}
+BoxCoxTrans(gas_pressure$temp)
+```
+
+```{r boxcox pressure}
+BoxCoxTrans(gas_pressure$pressure)
+```
+
+Los tests sugieren que no lograremos un mejor ajuste transformando ninguna de las dos variables.
+
+
+También podemos optar por una representación gráfica, incluyendo intervalos de confianza para lambda:
+```{r, fig.cap="Bondad de ajuste frente a lambda estimada para la variable respuesta pressure. Las líneas punteadas delimitan el intervalo de confianza del 95%. El valor 1 está incluido dentro del intevalo, lo que señala a que no hay razón suficiente para realizar la transformación."}
+
+interfile <- "images/boxcox_pressure.png"
+
+#save grid of graphs
+if(file.exists(interfile)){
+  knitr::include_graphics(interfile) # Draw image
+}else{
+  png("./images/boxcox_pressure.png")
+boxcox(gas_mod, lambda=seq(0.5,1.5,by=0.1)) # Generate plot
+dev.off() # close device
+knitr::include_graphics(interfile) # Draw image
+}
+
+## For some reason, if the graph is generated on the fly while knitting execution ends with an error. Pre-generating the plot
+## as a png and loading it during knitting is a work-around that prevents it.
+
+```
+
+
+## 2c. Como sabemos que la presión de un gas en un tanque es proporcional a la temperatura, calcular la regresión si la variable respuesta es la inversa de la presión. Estudiar la diagnosis de este modelo. ¿Aparece un problema estructural?
+
+```{r presion inversa}
+gas_mod_inv_p <- lm(1/pressure ~ temp, data = gas_pressure)
+sumary(gas_mod_inv_p)
+```
+
+```{r, fig.cap="Residuos frente a valores ajustados. Se aprecia claramente que el valor de los residuos sigue una estructura subyacente."}
+plot(gas_mod_inv_p, which = 1)
+```
+
+
+**Finalmente, además de esta transformación para la respuesta, también hay que transformar la variable regresora. Probar con las transformaciones más habituales y elegir el mejor modelo.**
+
+Las transformaciones más habituales son la cuadrática, la raíz cuadrada y la inversa. Compararemos cómo afecta aplicar cada transformación a la variable predictora:
+```{r}
+gas_mod_inv_p2 <- lm(1/pressure ~ I(1/temp), data = gas_pressure)
+gas_mod_inv_p3 <- lm(1/pressure ~ I(temp^2), data = gas_pressure)
+gas_mod_inv_p4 <- lm(1/pressure ~ sqrt(temp), data = gas_pressure)
+```
+```{r}
+plot(gas_mod_inv_p2, which = 1)
+```
+```{r}
+plot(gas_mod_inv_p3, which = 1)
+```
+```{r}
+plot(gas_mod_inv_p4, which = 1)
+```
+
+De las tres transformaciones aplicadas, invertir los valores de las variables respuesta y la variable predictora es la transformación que alivia en mayor medida el problema de los errores de regresión no aleatorios (ver la primera de las tres gráficas anteriores).
+
+
+## 2d. Ahora vamos con la regresión ponderada o WLS
+
+**Construimos una columna de datos con las temperaturas redondeadas de forma que los valores se repitan.**
+
+Esto lo hacemos para generar grupos de datos. Posteriormente calcularemos la varianza en cada grupo de datos, ya que anteriormente vimos que la varianza no es homogénea y diferentes zonas del rango de temperaturas corresponden a diferentes varianzas.
+
+```{r}
+temp_r <- 3 * round(gas_pressure$temp/3)
+## Division and posterior multiplication by three
+## has the effect of augmenting granularity
+# with more repeated values (wider groups)
+
+grupos <- length(unique(temp_r))
+```
+
+En total, dividiremos los datos en `r grupos` grupos según el valor de temperatura.
+
+**Calcularemos la desviación estándar de la presión en cada grupo de temperaturas redondeadas.**
+
+```{r}
+# Indexes for ordering the data
+# not relevant in this case, since the values of temperature are already
+# somewhat ordered and get completely ordered when rounded
+orden <- order(temp_r)
+
+# Order the original data by the index above
+gas_pressure_ord <- gas_pressure[orden,]
+
+# Compute the mean of the predictor for each group
+temperature_mean <- unlist(lapply(split(gas_pressure_ord$temp, temp_r[orden]), mean))
+# Compute variance of the response for each group
+pressure_var <- unlist(lapply(split(gas_pressure_ord$pressure, temp_r[orden]), var))
+```
+
+Si suponemos que la varianza sigue el modelo
+$$
+\log(\sigma_i^2) = \log(\gamma_1) + \gamma_2 · \log(temp_i)
+$$
+
+Podemos estimar $\gamma_1$ y $\gamma_2$ mediante una regresión lineal del logaritmo de las medias de temperatura sobre el logaritmo de las varianzas. El punto de intercepción nos dará la estimación de $\gamma_1$, y la pendiente la estimación de $\gamma_2$:
+
+```{r}
+gas_pressure_logmod <- lm(log(pressure_var) ~ log(temperature_mean))
+summary(gas_pressure_logmod)
+```
+
+**$\gamma_1$:** `r coef(gas_pressure_logmod)[[1]]`  
+**$\gamma_2$:** `r coef(gas_pressure_logmod)[[2]]`  
+
+
+## 2e. Tomamos un valor entero _g_ próximo a $\gamma_2$ y consideramos los pesos como $\omega_i \approx temp^{-g}$. Calcular la regresión ponderada con esos pesos.
+
+```{r}
+# Choose gamma 2
+g <- round(coef(gas_pressure_logmod)[[2]])
+
+# Fit to weighted model
+gas_pressure_wlm <- lm(pressure ~ temp, data = gas_pressure, weights = gas_pressure$temp^-g)
+summary(gas_pressure_wlm)
+```
+
+
+## 2f. Realizar la diagnosis del modelo de regresión ponderada
+
+Si representamos los residuos del modelo ponderado frente a los valores ajustados:
+```{r, fig.cap="Gráfica de los residuos ponderados frente a la temperatura. Ya no se observa el aumento de varianza ligado al aumento de temperatura que se observaba en el modelo de regresión sin pesos."}
+residuos <- sqrt(gas_pressure$temp^-g) * # square root of the weights
+  gas_pressure_wlm$residuals # residuos
+
+plot(gas_pressure$temp,
+     residuos,
+     ylab = "Residuos ponderados",
+     xlab = "Temperatura")
+abline(h=0, lty=2)
+```
+
+
+## 2g. Una solución alternativa es considerar un modelo GLS con la condición $\sigma_i = \gamma_0 + temp_i^{\gamma_1}$ y hallar los pesos que simultáneamente estiman los parámetros $\beta$ y las $\gamma$ por máxima verosimilitud. Para ello, disponemos del paquete `nlme` y su función `gls()`.
+
+```{r}
+# Fit model
+gas_pressure_gls_mod <- gls(pressure ~ temp, data = gas_pressure, weights = varConstPower(form =~temp))
+summary(gas_pressure_gls_mod)
+```
+
+**$\hat \gamma_0$:** 0.09906465  
+**$\hat \gamma_1$:** `r gas_pressure_gls_mod$modelStruct$varStruct[[2]]`  
+**$\hat \beta_0$:** `r gas_pressure_gls_mod$coefficients[[1]]`  
+**$\hat \beta_1$:** `r gas_pressure_gls_mod$coefficients[[2]]`   
+
+
+## 2h. Dibujar el gráfico de dispersión que aparece al final del apartado 4.4.5.2 y añadir la recta del modelo GLS.
+
+```{r, fig.cap="Gráfico de dispersión de presión frente a temperatura. La línea azul representa el ajuste al modelo de variables transformadas (inversa de presion frente a inversa de temperatura). La línea roja representa el ajuste al modelo ponderado por mínimos cuadrados generalizados. Este último parece ajustarse más a los datos."}
+# Slope and intercept
+transformed_fit <- c(coef(gas_mod_inv_p2))
+weighted_fit <- c(gas_pressure_gls_mod$coefficients[[1]],
+                  gas_pressure_gls_mod$coefficients[[2]])
+# Scatterplot
+plot(pressure ~ temp, data = gas_pressure,
+     xlab = "Temperature",
+     ylab = "Pressure",
+     pch = 20)
+# Fitted lines
+abline(a = -transformed_fit[1]/transformed_fit[2], 
+       b= 1/transformed_fit[2], col = "blue")
+abline(coef= weighted_fit, col = "red")
+# Plot legend
+legend(21, y = 270,
+       legend = c("Transformed Fit", "Weighted Fit"),
+       col = c("blue", "red"),
+       lty = c(1,1))
+```
 
 
 
